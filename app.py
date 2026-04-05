@@ -9,7 +9,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "volunteer_secret_key_2025")
 CORS(app, supports_credentials=True)
 
-# ─── DB CONNECTION (RAILWAY FIXED) ────────────────────────────
+
+# ─── DB CONNECTION (SAFE VERSION) ────────────────────────────
 def get_db():
     try:
         db = mysql.connector.connect(
@@ -36,62 +37,94 @@ def home():
 
 
 # ─── AUTH ROUTES ──────────────────────────────────────────────
+
 @app.route('/api/register/volunteer', methods=['POST'])
 def register_volunteer():
     data = request.json
     db = get_db()
+
+    if not db:
+        return jsonify({'success': False, 'message': 'DB connection failed'}), 500
+
     cursor = db.cursor(dictionary=True)
+
     try:
         cursor.execute(
             "INSERT INTO Volunteer (name, email, phone, city, password) VALUES (%s,%s,%s,%s,%s)",
             (data['name'], data['email'], data.get('phone'), data.get('city'), hash_password(data['password']))
         )
         db.commit()
+
         vid = cursor.lastrowid
+
         cursor.execute(
             "INSERT INTO VolunteerProfile (volunteer_id, experience_level, availability_hours, preferred_mode) VALUES (%s,%s,%s,%s)",
             (vid, data.get('experience_level','Beginner'), data.get('availability_hours',5), data.get('preferred_mode','Online'))
         )
         db.commit()
+
         return jsonify({'success': True, 'volunteer_id': vid}), 201
+
     except mysql.connector.IntegrityError:
         return jsonify({'success': False, 'message': 'Email already exists'}), 409
+
     finally:
-        cursor.close(); db.close()
+        cursor.close()
+        db.close()
 
 
 @app.route('/api/register/organization', methods=['POST'])
 def register_organization():
     data = request.json
     db = get_db()
+
+    if not db:
+        return jsonify({'success': False, 'message': 'DB connection failed'}), 500
+
     cursor = db.cursor(dictionary=True)
+
     try:
         cursor.execute(
             "INSERT INTO Organization (org_name, email, phone, address, description, password) VALUES (%s,%s,%s,%s,%s,%s)",
             (data['org_name'], data['email'], data.get('phone'), data.get('address'), data.get('description'), hash_password(data['password']))
         )
         db.commit()
+
         return jsonify({'success': True, 'org_id': cursor.lastrowid}), 201
+
     except mysql.connector.IntegrityError:
         return jsonify({'success': False, 'message': 'Email already exists'}), 409
+
     finally:
-        cursor.close(); db.close()
+        cursor.close()
+        db.close()
 
 
 @app.route('/api/login/volunteer', methods=['POST'])
 def login_volunteer():
     data = request.json
     db = get_db()
+
+    if not db:
+        return jsonify({'success': False, 'message': 'DB connection failed'}), 500
+
     cursor = db.cursor(dictionary=True)
+
     cursor.execute(
         "SELECT volunteer_id, name, email, city FROM Volunteer WHERE email=%s AND password=%s",
         (data['email'], hash_password(data['password']))
     )
+
     user = cursor.fetchone()
-    cursor.close(); db.close()
+
+    cursor.close()
+    db.close()
+
     if user:
-        session['user'] = user; session['role'] = 'volunteer'
+        session['user'] = user
+        session['role'] = 'volunteer'
         return jsonify({'success': True, 'user': user, 'role': 'volunteer'})
+
     return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
 
 
@@ -99,16 +132,27 @@ def login_volunteer():
 def login_organization():
     data = request.json
     db = get_db()
+
+    if not db:
+        return jsonify({'success': False, 'message': 'DB connection failed'}), 500
+
     cursor = db.cursor(dictionary=True)
+
     cursor.execute(
         "SELECT org_id, org_name, email FROM Organization WHERE email=%s AND password=%s",
         (data['email'], hash_password(data['password']))
     )
+
     org = cursor.fetchone()
-    cursor.close(); db.close()
+
+    cursor.close()
+    db.close()
+
     if org:
-        session['user'] = org; session['role'] = 'organization'
+        session['user'] = org
+        session['role'] = 'organization'
         return jsonify({'success': True, 'user': org, 'role': 'organization'})
+
     return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
 
 
@@ -118,10 +162,15 @@ def logout():
     return jsonify({'success': True})
 
 
-# ─── OPPORTUNITY ROUTE ───────────────────────────────────────
+# ─── OPPORTUNITIES ───────────────────────────────────────────
+
 @app.route('/api/opportunities', methods=['GET'])
 def get_opportunities():
     db = get_db()
+
+    if not db:
+        return jsonify({'success': False, 'message': 'DB connection failed'}), 500
+
     cursor = db.cursor(dictionary=True)
 
     cursor.execute("""
@@ -134,13 +183,16 @@ def get_opportunities():
     """)
 
     data = cursor.fetchall()
-    cursor.close(); db.close()
+
+    cursor.close()
+    db.close()
+
     return jsonify(data)
 
 
-# 🚨 FINAL FIX (VERY IMPORTANT)
+# ─── RUN APP ────────────────────────────────────────────────
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
 
 # from flask import Flask, request, jsonify, session
 # from flask_cors import CORS
