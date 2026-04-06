@@ -399,10 +399,12 @@ def get_org_stats(org_id):
 
 @app.route('/api/causes', methods=['GET'])
 def get_causes():
-    db = get_db(); cursor = db.cursor(dictionary=True)
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
     cursor.execute("SELECT * FROM Cause")
     causes = cursor.fetchall()
-    cursor.close(); db.close()
+    cursor.close()
+    db.close()
     return jsonify(causes)
 
 @app.route('/api/skills', methods=['GET'])
