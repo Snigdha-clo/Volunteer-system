@@ -397,7 +397,7 @@ def get_org_stats(org_id):
     cursor.close(); db.close()
     return jsonify(stats)
 
-@app.route('/api/causes', methods=['GET'])
+@app.route('/api/causes')
 def get_causes():
     db = get_db()
     cursor = db.cursor(dictionary=True)
