@@ -15,18 +15,13 @@ CORS(app, supports_credentials=True)
 # ─── DB Connection (FIXED) ────────────────────────────────────
 
 def get_db():
-    try:
-        db = mysql.connector.connect(
-            host=os.getenv("MYSQLHOST"),
-            user=os.getenv("MYSQLUSER"),
-            password=os.getenv("MYSQLPASSWORD"),
-            database=os.getenv("MYSQLDATABASE"),
-            port=int(os.getenv("MYSQLPORT", 3306))
-        )
-        return db
-    except mysql.connector.Error as err:
-        print("❌ Database connection error:", err)
-        return None
+    return mysql.connector.connect(
+        host=os.getenv("MYSQLHOST"),
+        user=os.getenv("MYSQLUSER"),
+        password=os.getenv("MYSQLPASSWORD"),
+        database=os.getenv("MYSQLDATABASE"),
+        port=int(os.getenv("MYSQLPORT") or 3306)
+    )
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -398,15 +393,23 @@ def get_org_stats(org_id):
     cursor.close(); db.close()
     return jsonify(stats)
 
-@app.route('/api/causes')
+@app.route('/api/causes', methods=['GET'])
 def get_causes():
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM Cause")
-    causes = cursor.fetchall()
-    cursor.close()
-    db.close()
-    return jsonify(causes)
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        cursor.execute("SELECT * FROM Cause")
+        causes = cursor.fetchall()
+
+        cursor.close()
+        db.close()
+
+        return jsonify(causes)
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/skills', methods=['GET'])
 def get_skills():
