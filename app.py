@@ -6,6 +6,7 @@ import os
 from datetime import date
 print("🔥 APP LOADED SUCCESSFULLY")
 
+
 app = Flask(__name__)
 app.secret_key = 'volunteer_secret_key_2025'
 CORS(app, supports_credentials=True)
