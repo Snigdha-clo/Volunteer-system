@@ -415,6 +415,11 @@ def get_skills():
     cursor.close(); db.close()
     return jsonify(skills)
 
+
+@app.route("/test")
+def test():
+    return "API WORKING"
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
 
