@@ -13,7 +13,6 @@ CORS(app, supports_credentials=True)
 # ─── DB Connection ────────────────────────────────────────────
 # ─── DB Connection (FIXED) ────────────────────────────────────
 
-
 def get_db():
     try:
         db = mysql.connector.connect(
